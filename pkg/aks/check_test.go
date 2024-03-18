@@ -6,11 +6,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/mgmt/2020-08-01/operationalinsights"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rancher/aks-operator/pkg/aks/services/mock_services"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_generateUniqueLogWorkspace(t *testing.T) {
