@@ -51,11 +51,11 @@ func CreateCluster(ctx context.Context, cred *Credentials, clusterClient service
 }
 
 // createManagedCluster creates a new managed Kubernetes cluster.
-func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClient services.WorkplacesClientInterface, spec *aksv1.AKSClusterConfigSpec, phase string) (*containerservice.ManagedCluster, error) {
-	managedCluster := &containerservice.ManagedCluster{
+func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClient services.WorkplacesClientInterface, spec *aksv1.AKSClusterConfigSpec, phase string) (*armcontainerservice.ManagedCluster, error) {
+	managedCluster := &armcontainerservice.ManagedCluster{
 		Name:     to.StringPtr(spec.ClusterName),
 		Location: to.StringPtr(spec.ResourceLocation),
-		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+		ManagedClusterProperties: &armcontainerservice.ManagedClusterProperties{
 			KubernetesVersion: spec.KubernetesVersion,
 		},
 	}
@@ -79,7 +79,7 @@ func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClie
 	}
 	managedCluster.ManagedClusterProperties.NodeResourceGroup = to.StringPtr(nodeResourceGroupName)
 
-	networkProfile := &containerservice.NetworkProfile{}
+	networkProfile := &armcontainerservice.NetworkProfile{}
 
 	switch to.String(spec.OutboundType) {
 	case string(containerservice.LoadBalancer):
@@ -142,9 +142,9 @@ func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClie
 	}
 	managedCluster.ManagedClusterProperties.NetworkProfile = networkProfile
 
-	agentPoolProfiles := []containerservice.ManagedClusterAgentPoolProfile{}
+	agentPoolProfiles := []armcontainerservice.ManagedClusterAgentPoolProfile{}
 	for _, np := range spec.NodePools {
-		agentProfile := containerservice.ManagedClusterAgentPoolProfile{
+		agentProfile := armcontainerservice.ManagedClusterAgentPoolProfile{
 			Name:         np.Name,
 			Count:        np.Count,
 			MaxPods:      np.MaxPods,
@@ -158,7 +158,7 @@ func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClie
 		}
 
 		if np.MaxSurge != nil {
-			agentProfile.UpgradeSettings = &containerservice.AgentPoolUpgradeSettings{
+			agentProfile.UpgradeSettings = &armcontainerservice.AgentPoolUpgradeSettings{
 				MaxSurge: np.MaxSurge,
 			}
 		}
@@ -200,10 +200,10 @@ func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClie
 	managedCluster.ManagedClusterProperties.AgentPoolProfiles = &agentPoolProfiles
 
 	if hasLinuxProfile(spec) {
-		managedCluster.ManagedClusterProperties.LinuxProfile = &containerservice.LinuxProfile{
+		managedCluster.ManagedClusterProperties.LinuxProfile = &armcontainerservice.LinuxProfile{
 			AdminUsername: spec.LinuxAdminUsername,
-			SSH: &containerservice.SSHConfiguration{
-				PublicKeys: &[]containerservice.SSHPublicKey{
+			SSH: &armcontainerservice.SSHConfiguration{
+				PublicKeys: &[]armcontainerservice.SSHPublicKey{
 					{
 						KeyData: spec.LinuxSSHPublicKey,
 					},

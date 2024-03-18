@@ -3,15 +3,25 @@ package aks
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/rancher/aks-operator/pkg/aks/services"
 	aksv1 "github.com/rancher/aks-operator/pkg/apis/aks.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 )
 
-func UpdateClusterTags(ctx context.Context, clusterClient services.ManagedClustersClientInterface, resourceGroupName string, resourceName string, parameters containerservice.TagsObject) (containerservice.ManagedClustersUpdateTagsFuture, error) {
-	return clusterClient.UpdateTags(ctx, resourceGroupName, resourceName, parameters)
+func UpdateClusterTags(ctx context.Context, clusterClient services.ManagedClustersClientInterface, resourceGroupName string, resourceName string, parameters armcontainerservice.TagsObject) (armcontainerservice.ManagedClustersClientUpdateTagsResponse, error) {
+	poller, err := clusterClient.BeginUpdateTags(ctx, resourceGroupName, resourceName, parameters, nil)
+	if err != nil {
+		return armcontainerservice.ManagedClustersClientUpdateTagsResponse{}, err
+	}
+
+	resp, err := poller.PollUntilDone(ctx, nil)
+	if err != nil {
+		logrus.Errorf("can't update the AKS cluster tags with error: %v", err)
+		return armcontainerservice.ManagedClustersClientUpdateTagsResponse{}, err
+	}
+	return resp, nil
 }
 
 // UpdateCluster updates an existing managed Kubernetes cluster. Before updating, it pulls any existing configuration
@@ -25,7 +35,7 @@ func UpdateCluster(ctx context.Context, cred *Credentials, clusterClient service
 	}
 
 	// Pull the upstream cluster state
-	actualCluster, err := clusterClient.Get(ctx, spec.ResourceGroup, spec.ClusterName)
+	actualCluster, err := clusterClient.Get(ctx, spec.ResourceGroup, spec.ClusterName, nil)
 	if err != nil {
 		logrus.Errorf("Error getting upstream AKS cluster by name [%s]: %s", spec.ClusterName, err.Error())
 		return err
@@ -35,23 +45,33 @@ func UpdateCluster(ctx context.Context, cred *Credentials, clusterClient service
 	// want to overwrite preconfigured values in Azure with nil values. So only update fields pulled from AKS with
 	// values from the managed cluster if they are non nil.
 
-	_, err = clusterClient.CreateOrUpdate(
+	poller, err := clusterClient.BeginCreateOrUpdate(
 		ctx,
 		spec.ResourceGroup,
 		spec.ClusterName,
-		updateCluster(*desiredCluster, actualCluster),
+		updateCluster(*desiredCluster, actualCluster.ManagedCluster),
+		nil,
 	)
+	if err != nil {
+		logrus.Errorf("can't update the AKS cluster with error: %v", err)
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, nil)
+	if err != nil {
+		logrus.Errorf("can't update the AKS cluster with error: %v", err)
+	}
 
 	return err
 }
 
-func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster containerservice.ManagedCluster) containerservice.ManagedCluster {
+func updateCluster(desiredCluster armcontainerservice.ManagedCluster, actualCluster armcontainerservice.ManagedCluster) armcontainerservice.ManagedCluster {
 	if !validateUpdate(desiredCluster, actualCluster) {
 		logrus.Warn("Not all cluster properties can be updated.")
 	}
 
 	if actualCluster.ManagedClusterProperties == nil {
-		actualCluster.ManagedClusterProperties = &containerservice.ManagedClusterProperties{}
+		actualCluster.ManagedClusterProperties = &armcontainerservice.ManagedClusterProperties{}
 	}
 
 	// Update kubernetes version
@@ -62,7 +82,7 @@ func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster
 
 	// Add/update agent pool profiles
 	if actualCluster.AgentPoolProfiles == nil {
-		actualCluster.AgentPoolProfiles = &[]containerservice.ManagedClusterAgentPoolProfile{}
+		actualCluster.AgentPoolProfiles = &[]armcontainerservice.ManagedClusterAgentPoolProfile{}
 	}
 
 	for _, ap := range *desiredCluster.AgentPoolProfiles {
@@ -74,7 +94,7 @@ func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster
 	// Add/update addon profiles (this will keep separate profiles added by AKS). This code will also add/update addon
 	// profiles for http application routing and monitoring.
 	if actualCluster.AddonProfiles == nil {
-		actualCluster.AddonProfiles = map[string]*containerservice.ManagedClusterAddonProfile{}
+		actualCluster.AddonProfiles = map[string]*armcontainerservice.ManagedClusterAddonProfile{}
 	}
 	for profile := range desiredCluster.AddonProfiles {
 		actualCluster.AddonProfiles[profile] = desiredCluster.AddonProfiles[profile]
@@ -84,7 +104,7 @@ func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster
 	// note: there could be authorized IP ranges set in AKS that haven't propagated yet when this update is done. Add
 	// ranges from Rancher to any ones already set in AKS.
 	if actualCluster.APIServerAccessProfile == nil {
-		actualCluster.APIServerAccessProfile = &containerservice.ManagedClusterAPIServerAccessProfile{
+		actualCluster.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
 			AuthorizedIPRanges: &[]string{},
 		}
 	}
@@ -107,7 +127,7 @@ func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster
 	// Network profile
 	if desiredCluster.NetworkProfile != nil {
 		if actualCluster.NetworkProfile == nil {
-			actualCluster.NetworkProfile = &containerservice.NetworkProfile{}
+			actualCluster.NetworkProfile = &armcontainerservice.NetworkProfile{}
 		}
 
 		if desiredCluster.NetworkProfile.NetworkPlugin != "" {
@@ -154,7 +174,7 @@ func updateCluster(desiredCluster containerservice.ManagedCluster, actualCluster
 	return actualCluster
 }
 
-func validateUpdate(desiredCluster containerservice.ManagedCluster, actualCluster containerservice.ManagedCluster) bool {
+func validateUpdate(desiredCluster armcontainerservice.ManagedCluster, actualCluster armcontainerservice.ManagedCluster) bool {
 	/*
 		The following fields are managed in Rancher but are NOT configurable on update
 		- Name
@@ -191,7 +211,7 @@ func validateUpdate(desiredCluster containerservice.ManagedCluster, actualCluste
 	return true
 }
 
-func hasAgentPoolProfile(name *string, agentPoolProfiles *[]containerservice.ManagedClusterAgentPoolProfile) bool {
+func hasAgentPoolProfile(name *string, agentPoolProfiles *[]armcontainerservice.ManagedClusterAgentPoolProfile) bool {
 	if agentPoolProfiles == nil {
 		return false
 	}
@@ -204,7 +224,7 @@ func hasAgentPoolProfile(name *string, agentPoolProfiles *[]containerservice.Man
 	return false
 }
 
-func hasAuthorizedIPRange(name string, apiServerAccessProfile *containerservice.ManagedClusterAPIServerAccessProfile) bool {
+func hasAuthorizedIPRange(name string, apiServerAccessProfile *armcontainerservice.ManagedClusterAPIServerAccessProfile) bool {
 	if apiServerAccessProfile == nil || apiServerAccessProfile.AuthorizedIPRanges == nil {
 		return false
 	}
