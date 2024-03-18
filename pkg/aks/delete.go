@@ -3,7 +3,6 @@ package aks
 import (
 	"context"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/rancher/aks-operator/pkg/aks/services"
 	aksv1 "github.com/rancher/aks-operator/pkg/apis/aks.cattle.io/v1"
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,7 @@ func RemoveCluster(ctx context.Context, clusterClient services.ManagedClustersCl
 
 // RemoveAgentPool Delete AKS Agent Pool
 func RemoveAgentPool(ctx context.Context, agentPoolClient services.AgentPoolsClientInterface, spec *aksv1.AKSClusterConfigSpec, np *aksv1.AKSNodePool) error {
-	_, err := agentPoolClient.Delete(ctx, spec.ResourceGroup, spec.ClusterName, to.String(np.Name))
+	_, err := agentPoolClient.BeginDelete(ctx, spec.ResourceGroup, spec.ClusterName, *np.Name)
 
 	return err
 }

@@ -3,7 +3,9 @@ package aks
 import (
 	"errors"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	azcoreto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/mgmt/2020-08-01/operationalinsights"
@@ -457,37 +459,37 @@ var _ = Describe("CreateOrUpdateAgentPool", func() {
 	})
 
 	It("should successfully create agent pool", func() {
-		agentPoolClientMock.EXPECT().CreateOrUpdate(
+		agentPoolClientMock.EXPECT().BeginCreateOrUpdate(
 			ctx, clusterSpec.ResourceGroup, clusterSpec.ClusterName, to.String(nodePoolSpec.Name),
-			containerservice.AgentPool{
-				ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+			armcontainerservice.AgentPool{
+				Properties: &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
 					Count:               nodePoolSpec.Count,
 					MaxPods:             nodePoolSpec.MaxPods,
-					OsDiskSizeGB:        nodePoolSpec.OsDiskSizeGB,
-					OsDiskType:          containerservice.OSDiskType(nodePoolSpec.OsDiskType),
-					OsType:              containerservice.OSType(nodePoolSpec.OsType),
-					VMSize:              containerservice.VMSizeTypes(nodePoolSpec.VMSize),
-					Mode:                containerservice.AgentPoolMode(nodePoolSpec.Mode),
-					Type:                containerservice.VirtualMachineScaleSets,
+					OSDiskSizeGB:        nodePoolSpec.OsDiskSizeGB,
+					OSDiskType:          azcoreto.Ptr(armcontainerservice.OSDiskType(nodePoolSpec.OsDiskType)),
+					OSType:              azcoreto.Ptr(armcontainerservice.OSType(nodePoolSpec.OsType)),
+					VMSize:              azcoreto.Ptr(nodePoolSpec.VMSize),
+					Mode:                azcoreto.Ptr(armcontainerservice.AgentPoolMode(nodePoolSpec.Mode)),
+					Type:                azcoreto.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 					OrchestratorVersion: nodePoolSpec.OrchestratorVersion,
-					AvailabilityZones:   nodePoolSpec.AvailabilityZones,
+					AvailabilityZones:   convertToSliceOfPointers(nodePoolSpec.AvailabilityZones),
 					EnableAutoScaling:   nodePoolSpec.EnableAutoScaling,
 					MinCount:            nodePoolSpec.MinCount,
 					MaxCount:            nodePoolSpec.MaxCount,
-					NodeTaints:          nodePoolSpec.NodeTaints,
+					NodeTaints:          convertToSliceOfPointers(nodePoolSpec.NodeTaints),
 					NodeLabels:          nodePoolSpec.NodeLabels,
-					UpgradeSettings: &containerservice.AgentPoolUpgradeSettings{
+					UpgradeSettings: &armcontainerservice.AgentPoolUpgradeSettings{
 						MaxSurge: nodePoolSpec.MaxSurge,
 					},
 				},
-			}).Return(containerservice.AgentPoolsCreateOrUpdateFuture{}, nil)
+			}).Return(&runtime.Poller[armcontainerservice.AgentPoolsClientCreateOrUpdateResponse]{}, nil)
 		Expect(CreateOrUpdateAgentPool(ctx, agentPoolClientMock, clusterSpec, nodePoolSpec)).To(Succeed())
 	})
 
 	It("should fail if agentPoolClient.CreateOrUpdate returns error", func() {
-		agentPoolClientMock.EXPECT().CreateOrUpdate(
+		agentPoolClientMock.EXPECT().BeginCreateOrUpdate(
 			ctx, clusterSpec.ResourceGroup, clusterSpec.ClusterName, to.String(nodePoolSpec.Name), gomock.Any()).
-			Return(containerservice.AgentPoolsCreateOrUpdateFuture{}, errors.New("test-error"))
+			Return(&runtime.Poller[armcontainerservice.AgentPoolsClientCreateOrUpdateResponse]{}, errors.New("test-error"))
 
 		Expect(CreateOrUpdateAgentPool(ctx, agentPoolClientMock, clusterSpec, nodePoolSpec)).ToNot(Succeed())
 	})

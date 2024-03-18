@@ -966,7 +966,7 @@ func (h *Handler) getAzureClients(config *aksv1.AKSClusterConfig) error {
 	if err != nil {
 		return fmt.Errorf("error creating resource group client: %w", err)
 	}
-	agentPoolsClient, err := services.NewAgentPoolClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
+	agentPoolsClient, err := services.NewAgentPoolClient(credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating agent pool client: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	azcoreto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -298,33 +299,33 @@ func createManagedCluster(ctx context.Context, cred *Credentials, workplacesClie
 // CreateOrUpdateAgentPool creates a new pool(s) in AKS. If one already exists it updates the upstream node pool with
 // any provided updates.
 func CreateOrUpdateAgentPool(ctx context.Context, agentPoolClient services.AgentPoolsClientInterface, spec *aksv1.AKSClusterConfigSpec, np *aksv1.AKSNodePool) error {
-	agentProfile := &containerservice.ManagedClusterAgentPoolProfileProperties{
+	agentProfile := &armcontainerservice.ManagedClusterAgentPoolProfileProperties{
 		Count:               np.Count,
 		MaxPods:             np.MaxPods,
-		OsDiskSizeGB:        np.OsDiskSizeGB,
-		OsDiskType:          containerservice.OSDiskType(np.OsDiskType),
-		OsType:              containerservice.OSType(np.OsType),
-		VMSize:              containerservice.VMSizeTypes(np.VMSize),
-		Mode:                containerservice.AgentPoolMode(np.Mode),
-		Type:                containerservice.VirtualMachineScaleSets,
+		OSDiskSizeGB:        np.OsDiskSizeGB,
+		OSDiskType:          azcoreto.Ptr(armcontainerservice.OSDiskType(np.OsDiskType)),
+		OSType:              azcoreto.Ptr(armcontainerservice.OSType(np.OsType)),
+		VMSize:              azcoreto.Ptr(np.VMSize),
+		Mode:                azcoreto.Ptr(armcontainerservice.AgentPoolMode(np.Mode)),
+		Type:                azcoreto.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 		OrchestratorVersion: np.OrchestratorVersion,
-		AvailabilityZones:   np.AvailabilityZones,
+		AvailabilityZones:   convertToSliceOfPointers(np.AvailabilityZones),
 		EnableAutoScaling:   np.EnableAutoScaling,
 		MinCount:            np.MinCount,
 		MaxCount:            np.MaxCount,
 		VnetSubnetID:        np.VnetSubnetID,
 		NodeLabels:          np.NodeLabels,
-		NodeTaints:          np.NodeTaints,
+		NodeTaints:          convertToSliceOfPointers(np.NodeTaints),
 	}
 
 	if np.MaxSurge != nil {
-		agentProfile.UpgradeSettings = &containerservice.AgentPoolUpgradeSettings{
+		agentProfile.UpgradeSettings = &armcontainerservice.AgentPoolUpgradeSettings{
 			MaxSurge: np.MaxSurge,
 		}
 	}
 
-	_, err := agentPoolClient.CreateOrUpdate(ctx, spec.ResourceGroup, spec.ClusterName, to.String(np.Name), containerservice.AgentPool{
-		ManagedClusterAgentPoolProfileProperties: agentProfile,
+	_, err := agentPoolClient.BeginCreateOrUpdate(ctx, spec.ResourceGroup, spec.ClusterName, to.String(np.Name), armcontainerservice.AgentPool{
+		Properties: agentProfile,
 	})
 
 	return err
@@ -341,4 +342,15 @@ func hasLinuxProfile(spec *aksv1.AKSClusterConfigSpec) bool {
 func hasHTTPApplicationRoutingSupport(spec *aksv1.AKSClusterConfigSpec) bool {
 	// HttpApplicationRouting is not supported in azure china cloud
 	return !strings.HasPrefix(spec.ResourceLocation, "china")
+}
+
+func convertToSliceOfPointers[T any](slicePtr *[]T) []*T {
+	var ret []*T
+	if slicePtr == nil {
+		return ret
+	}
+	for _, v := range *slicePtr {
+		ret = append(ret, azcoreto.Ptr(v))
+	}
+	return ret
 }
