@@ -3,9 +3,10 @@ package aks
 import (
 	"errors"
 
+	azcoreto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/mgmt/2020-08-01/operationalinsights"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -33,10 +34,10 @@ var _ = Describe("CreateResourceGroup", func() {
 	})
 
 	It("should successfully create a resource group", func() {
-		mockResourceGroupClient.EXPECT().CreateOrUpdate(ctx, resourceGroupName, resources.Group{
-			Name:     to.StringPtr(resourceGroupName),
-			Location: to.StringPtr(location),
-		}).Return(resources.Group{}, nil)
+		mockResourceGroupClient.EXPECT().CreateOrUpdate(ctx, resourceGroupName, armresources.ResourceGroup{
+			Name:     azcoreto.Ptr(resourceGroupName),
+			Location: azcoreto.Ptr(location),
+		}).Return(nil)
 
 		Expect(CreateResourceGroup(ctx, mockResourceGroupClient, &aksv1.AKSClusterConfigSpec{
 			ResourceGroup:    resourceGroupName,
@@ -45,10 +46,10 @@ var _ = Describe("CreateResourceGroup", func() {
 	})
 
 	It("should catch error when resource group creation fails", func() {
-		mockResourceGroupClient.EXPECT().CreateOrUpdate(ctx, resourceGroupName, resources.Group{
-			Name:     to.StringPtr(resourceGroupName),
-			Location: to.StringPtr(location),
-		}).Return(resources.Group{}, errors.New("failed to create resource group"))
+		mockResourceGroupClient.EXPECT().CreateOrUpdate(ctx, resourceGroupName, armresources.ResourceGroup{
+			Name:     azcoreto.Ptr(resourceGroupName),
+			Location: azcoreto.Ptr(location),
+		}).Return(errors.New("failed to create resource group"))
 
 		err := CreateResourceGroup(ctx, mockResourceGroupClient, &aksv1.AKSClusterConfigSpec{
 			ResourceGroup:    resourceGroupName,

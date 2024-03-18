@@ -962,7 +962,7 @@ func (h *Handler) getAzureClients(config *aksv1.AKSClusterConfig) error {
 	if err != nil {
 		return fmt.Errorf("error creating managed cluster client: %w", err)
 	}
-	rgClient, err := services.NewResourceGroupsClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
+	rgClient, err := services.NewResourceGroupsClient(credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating resource group client: %w", err)
 	}

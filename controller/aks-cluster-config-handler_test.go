@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -552,13 +552,11 @@ var _ = Describe("createCluster", func() {
 		clusterClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(containerservice.ManagedClustersCreateOrUpdateFuture{},
 			nil)
 
-		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(autorest.Response{
-			Response: &http.Response{
-				StatusCode: 404,
-			},
+		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(armresources.ResourceGroupsClientCheckExistenceResponse{
+			Success: false,
 		}, nil)
 
-		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(resources.Group{}, nil)
+		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 		gotAKSConfig, err := handler.createCluster(aksConfig)
 		Expect(err).NotTo(HaveOccurred())
@@ -600,13 +598,11 @@ var _ = Describe("createCluster", func() {
 			},
 		}, nil)
 
-		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(autorest.Response{
-			Response: &http.Response{
-				StatusCode: 404,
-			},
+		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(armresources.ResourceGroupsClientCheckExistenceResponse{
+			Success: false,
 		}, nil)
 
-		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(resources.Group{}, errors.New("error"))
+		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error"))
 
 		_, err := handler.createCluster(aksConfig)
 		Expect(err).To(HaveOccurred())
@@ -624,13 +620,11 @@ var _ = Describe("createCluster", func() {
 		clusterClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(containerservice.ManagedClustersCreateOrUpdateFuture{},
 			errors.New("error"))
 
-		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(autorest.Response{
-			Response: &http.Response{
-				StatusCode: 404,
-			},
+		resourceGroupClientMock.EXPECT().CheckExistence(gomock.Any(), gomock.Any()).Return(armresources.ResourceGroupsClientCheckExistenceResponse{
+			Success: false,
 		}, nil)
 
-		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(resources.Group{}, nil)
+		resourceGroupClientMock.EXPECT().CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 		_, err := handler.createCluster(aksConfig)
 		Expect(err).To(HaveOccurred())

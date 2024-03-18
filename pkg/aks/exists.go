@@ -10,8 +10,7 @@ import (
 func ExistsResourceGroup(ctx context.Context, groupsClient services.ResourceGroupsClientInterface, resourceGroup string) (bool, error) {
 	resp, err := groupsClient.CheckExistence(ctx, resourceGroup)
 
-	// client should return 204 (no content) and if not, return false and the associated error.
-	return resp.StatusCode == 204, err
+	return resp.Success, err
 }
 
 // ExistsCluster Check if AKS managed Kubernetes cluster exist

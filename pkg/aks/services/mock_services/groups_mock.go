@@ -8,8 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
-	autorest "github.com/Azure/go-autorest/autorest"
+	armresources "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,10 +36,10 @@ func (m *MockResourceGroupsClientInterface) EXPECT() *MockResourceGroupsClientIn
 }
 
 // CheckExistence mocks base method.
-func (m *MockResourceGroupsClientInterface) CheckExistence(ctx context.Context, resourceGroupName string) (autorest.Response, error) {
+func (m *MockResourceGroupsClientInterface) CheckExistence(ctx context.Context, resourceGroupName string) (armresources.ResourceGroupsClientCheckExistenceResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckExistence", ctx, resourceGroupName)
-	ret0, _ := ret[0].(autorest.Response)
+	ret0, _ := ret[0].(armresources.ResourceGroupsClientCheckExistenceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,31 +51,15 @@ func (mr *MockResourceGroupsClientInterfaceMockRecorder) CheckExistence(ctx, res
 }
 
 // CreateOrUpdate mocks base method.
-func (m *MockResourceGroupsClientInterface) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup resources.Group) (resources.Group, error) {
+func (m *MockResourceGroupsClientInterface) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup armresources.ResourceGroup) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdate", ctx, resourceGroupName, resourceGroup)
-	ret0, _ := ret[0].(resources.Group)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateOrUpdate indicates an expected call of CreateOrUpdate.
 func (mr *MockResourceGroupsClientInterfaceMockRecorder) CreateOrUpdate(ctx, resourceGroupName, resourceGroup interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockResourceGroupsClientInterface)(nil).CreateOrUpdate), ctx, resourceGroupName, resourceGroup)
-}
-
-// Delete mocks base method.
-func (m *MockResourceGroupsClientInterface) Delete(ctx context.Context, resourceGroupName string) (resources.GroupsDeleteFuture, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, resourceGroupName)
-	ret0, _ := ret[0].(resources.GroupsDeleteFuture)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockResourceGroupsClientInterfaceMockRecorder) Delete(ctx, resourceGroupName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockResourceGroupsClientInterface)(nil).Delete), ctx, resourceGroupName)
 }

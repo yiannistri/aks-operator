@@ -8,25 +8,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
-	"github.com/Azure/go-autorest/autorest"
 )
 
 type ResourceGroupsClientInterface interface {
-	CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup resources.Group) (resources.Group, error)
-	CheckExistence(ctx context.Context, resourceGroupName string) (result autorest.Response, err error)
-	Delete(ctx context.Context, resourceGroupName string) (result resources.GroupsDeleteFuture, err error)
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup armresources.ResourceGroup) error
+	CheckExistence(ctx context.Context, resourceGroupName string) (armresources.ResourceGroupsClientCheckExistenceResponse, error)
 }
 
 type resourceGroupsClient struct {
-	groupsClient             resources.GroupsClient
 	armresourcesGroupsClient *armresources.ResourceGroupsClient
 }
 
-func NewResourceGroupsClient(authorizer autorest.Authorizer, baseURL, subscriptionID string, credential *azidentity.ClientSecretCredential, cloud cloud.Configuration) (*resourceGroupsClient, error) {
-	client := resources.NewGroupsClientWithBaseURI(baseURL, subscriptionID)
-	client.Authorizer = authorizer
-
+func NewResourceGroupsClient(subscriptionID string, credential *azidentity.ClientSecretCredential, cloud cloud.Configuration) (*resourceGroupsClient, error) {
 	options := arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Cloud: cloud,
@@ -38,19 +31,15 @@ func NewResourceGroupsClient(authorizer autorest.Authorizer, baseURL, subscripti
 	}
 
 	return &resourceGroupsClient{
-		groupsClient:             client,
 		armresourcesGroupsClient: clientFactory.NewResourceGroupsClient(),
 	}, nil
 }
 
-func (cl *resourceGroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup resources.Group) (resources.Group, error) {
-	return cl.groupsClient.CreateOrUpdate(ctx, resourceGroupName, resourceGroup)
+func (cl *resourceGroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceGroup armresources.ResourceGroup) error {
+	_, err := cl.armresourcesGroupsClient.CreateOrUpdate(ctx, resourceGroupName, resourceGroup, nil)
+	return err
 }
 
-func (cl *resourceGroupsClient) CheckExistence(ctx context.Context, resourceGroupName string) (result autorest.Response, err error) {
-	return cl.groupsClient.CheckExistence(ctx, resourceGroupName)
-}
-
-func (cl *resourceGroupsClient) Delete(ctx context.Context, resourceGroupName string) (result resources.GroupsDeleteFuture, err error) {
-	return cl.groupsClient.Delete(ctx, resourceGroupName)
+func (cl *resourceGroupsClient) CheckExistence(ctx context.Context, resourceGroupName string) (armresources.ResourceGroupsClientCheckExistenceResponse, error) {
+	return cl.armresourcesGroupsClient.CheckExistence(ctx, resourceGroupName, nil)
 }

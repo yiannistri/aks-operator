@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	azcoreto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/rancher/aks-operator/pkg/aks/services"
 	aksv1 "github.com/rancher/aks-operator/pkg/apis/aks.cattle.io/v1"
@@ -18,12 +19,12 @@ const (
 )
 
 func CreateResourceGroup(ctx context.Context, groupsClient services.ResourceGroupsClientInterface, spec *aksv1.AKSClusterConfigSpec) error {
-	_, err := groupsClient.CreateOrUpdate(
+	err := groupsClient.CreateOrUpdate(
 		ctx,
 		spec.ResourceGroup,
-		resources.Group{
-			Name:     to.StringPtr(spec.ResourceGroup),
-			Location: to.StringPtr(spec.ResourceLocation),
+		armresources.ResourceGroup{
+			Name:     azcoreto.Ptr(spec.ResourceGroup),
+			Location: azcoreto.Ptr(spec.ResourceLocation),
 		},
 	)
 	return err
