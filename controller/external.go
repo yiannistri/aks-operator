@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/rancher/aks-operator/pkg/aks"
 	"github.com/rancher/aks-operator/pkg/aks/services"
 	aksv1 "github.com/rancher/aks-operator/pkg/apis/aks.cattle.io/v1"
@@ -23,7 +24,14 @@ func GetClusterKubeConfig(ctx context.Context, secretsCache wranglerv1.SecretCac
 		return nil, fmt.Errorf("error creating authorizer: %w", err)
 	}
 
-	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	//TODO: Determine which Azure Cloud to use
+	cloud := cloud.AzurePublic
+	clientSecretCredential, err := aks.NewClientSecretCredential(credentials, cloud)
+	if err != nil {
+		return nil, fmt.Errorf("error creating client secret credential: %w", err)
+	}
+
+	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return nil, fmt.Errorf("error creating managed cluster client: %w", err)
 	}
@@ -49,7 +57,14 @@ func BuildUpstreamClusterState(ctx context.Context, secretsCache wranglerv1.Secr
 		return nil, fmt.Errorf("error creating authorizer: %w", err)
 	}
 
-	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	//TODO: Determine which Azure Cloud to use
+	cloud := cloud.AzurePublic
+	clientSecretCredential, err := aks.NewClientSecretCredential(credentials, cloud)
+	if err != nil {
+		return nil, fmt.Errorf("error creating client secret credential: %w", err)
+	}
+
+	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return nil, fmt.Errorf("error creating managed cluster client: %w", err)
 	}

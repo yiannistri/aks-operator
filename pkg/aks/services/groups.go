@@ -3,6 +3,11 @@ package services
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 )
@@ -14,14 +19,27 @@ type ResourceGroupsClientInterface interface {
 }
 
 type resourceGroupsClient struct {
-	groupsClient resources.GroupsClient
+	groupsClient             resources.GroupsClient
+	armresourcesGroupsClient *armresources.ResourceGroupsClient
 }
 
-func NewResourceGroupsClient(authorizer autorest.Authorizer, baseURL, subscriptionID string) (*resourceGroupsClient, error) {
+func NewResourceGroupsClient(authorizer autorest.Authorizer, baseURL, subscriptionID string, credential *azidentity.ClientSecretCredential, cloud cloud.Configuration) (*resourceGroupsClient, error) {
 	client := resources.NewGroupsClientWithBaseURI(baseURL, subscriptionID)
 	client.Authorizer = authorizer
+
+	options := arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloud,
+		},
+	}
+	clientFactory, err := armresources.NewClientFactory(subscriptionID, credential, &options)
+	if err != nil {
+		return nil, err
+	}
+
 	return &resourceGroupsClient{
-		groupsClient: client,
+		groupsClient:             client,
+		armresourcesGroupsClient: clientFactory.NewResourceGroupsClient(),
 	}, nil
 }
 

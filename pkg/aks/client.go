@@ -7,6 +7,9 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-11-01/subscriptions"
 	"github.com/Azure/go-autorest/autorest"
@@ -40,6 +43,14 @@ type Credentials struct {
 	TenantID       string
 	ClientID       string
 	ClientSecret   string
+}
+
+func NewClientSecretCredential(cred *Credentials, cloud cloud.Configuration) (*azidentity.ClientSecretCredential, error) {
+	return azidentity.NewClientSecretCredential(cred.TenantID, cred.ClientID, cred.ClientSecret, &azidentity.ClientSecretCredentialOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloud,
+		},
+	})
 }
 
 func NewClientAuthorizer(cred *Credentials) (autorest.Authorizer, error) {

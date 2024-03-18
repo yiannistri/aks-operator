@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/rancher/aks-operator/pkg/aks"
@@ -950,19 +951,26 @@ func (h *Handler) getAzureClients(config *aksv1.AKSClusterConfig) error {
 		return fmt.Errorf("error creating authorizer: %w", err)
 	}
 
-	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	//TODO: Determine which Azure Cloud to use
+	cloud := cloud.AzurePublic
+	clientSecretCredential, err := aks.NewClientSecretCredential(credentials, cloud)
+	if err != nil {
+		return fmt.Errorf("error creating client secret credential: %w", err)
+	}
+
+	clustersClient, err := services.NewManagedClustersClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating managed cluster client: %w", err)
 	}
-	rgClient, err := services.NewResourceGroupsClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	rgClient, err := services.NewResourceGroupsClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating resource group client: %w", err)
 	}
-	agentPoolsClient, err := services.NewAgentPoolClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	agentPoolsClient, err := services.NewAgentPoolClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating agent pool client: %w", err)
 	}
-	workplacesClient, err := services.NewWorkplacesClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID)
+	workplacesClient, err := services.NewWorkplacesClient(authorizer, *credentials.BaseURL, credentials.SubscriptionID, clientSecretCredential, cloud)
 	if err != nil {
 		return fmt.Errorf("error creating workplace client: %w", err)
 	}

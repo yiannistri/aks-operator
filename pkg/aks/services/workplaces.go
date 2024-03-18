@@ -3,6 +3,11 @@ package services
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/operationalinsights/armoperationalinsights"
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/mgmt/2020-08-01/operationalinsights"
 	"github.com/Azure/go-autorest/autorest"
 )
@@ -14,14 +19,27 @@ type WorkplacesClientInterface interface {
 }
 
 type workplacesClient struct {
-	workplacesClient operationalinsights.WorkspacesClient
+	workplacesClient                       operationalinsights.WorkspacesClient
+	armoperationalinsightsWorkspacesClient *armoperationalinsights.WorkspacesClient
 }
 
-func NewWorkplacesClient(authorizer autorest.Authorizer, baseURL, subscriptionID string) (*workplacesClient, error) {
+func NewWorkplacesClient(authorizer autorest.Authorizer, baseURL, subscriptionID string, credential *azidentity.ClientSecretCredential, cloud cloud.Configuration) (*workplacesClient, error) {
 	client := operationalinsights.NewWorkspacesClientWithBaseURI(baseURL, subscriptionID)
 	client.Authorizer = authorizer
+
+	options := arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloud,
+		},
+	}
+	clientFactory, err := armoperationalinsights.NewClientFactory(subscriptionID, credential, &options)
+	if err != nil {
+		return nil, err
+	}
+
 	return &workplacesClient{
-		workplacesClient: client,
+		workplacesClient:                       client,
+		armoperationalinsightsWorkspacesClient: clientFactory.NewWorkspacesClient(),
 	}, nil
 }
 

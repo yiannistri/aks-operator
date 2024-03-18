@@ -3,6 +3,11 @@ package services
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-11-01/containerservice"
 	"github.com/Azure/go-autorest/autorest"
 )
@@ -13,14 +18,27 @@ type AgentPoolsClientInterface interface {
 }
 
 type agentPoolClient struct {
-	agentPoolClient containerservice.AgentPoolsClient
+	agentPoolClient                     containerservice.AgentPoolsClient
+	armcontainerserviceAgentPoolsClient *armcontainerservice.AgentPoolsClient
 }
 
-func NewAgentPoolClient(authorizer autorest.Authorizer, baseURL, subscriptionID string) (*agentPoolClient, error) {
+func NewAgentPoolClient(authorizer autorest.Authorizer, baseURL, subscriptionID string, credential *azidentity.ClientSecretCredential, cloud cloud.Configuration) (*agentPoolClient, error) {
 	client := containerservice.NewAgentPoolsClientWithBaseURI(baseURL, subscriptionID)
 	client.Authorizer = authorizer
+
+	options := arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloud,
+		},
+	}
+	clientFactory, err := armcontainerservice.NewClientFactory(subscriptionID, credential, &options)
+	if err != nil {
+		return nil, err
+	}
+
 	return &agentPoolClient{
-		agentPoolClient: client,
+		agentPoolClient:                     client,
+		armcontainerserviceAgentPoolsClient: clientFactory.NewAgentPoolsClient(),
 	}, nil
 }
 
