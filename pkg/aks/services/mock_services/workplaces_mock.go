@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	armoperationalinsights "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/operationalinsights/armoperationalinsights"
+	services "github.com/rancher/aks-operator/pkg/aks/services"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockWorkplacesClientInterface) EXPECT() *MockWorkplacesClientInterfaceM
 }
 
 // BeginCreateOrUpdate mocks base method.
-func (m *MockWorkplacesClientInterface) BeginCreateOrUpdate(ctx context.Context, resourceGroupName, workspaceName string, parameters armoperationalinsights.Workspace, options *armoperationalinsights.WorkspacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armoperationalinsights.WorkspacesClientCreateOrUpdateResponse], error) {
+func (m *MockWorkplacesClientInterface) BeginCreateOrUpdate(ctx context.Context, resourceGroupName, workspaceName string, parameters armoperationalinsights.Workspace, options *armoperationalinsights.WorkspacesClientBeginCreateOrUpdateOptions) (services.Poller[armoperationalinsights.WorkspacesClientCreateOrUpdateResponse], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BeginCreateOrUpdate", ctx, resourceGroupName, workspaceName, parameters, options)
-	ret0, _ := ret[0].(*runtime.Poller[armoperationalinsights.WorkspacesClientCreateOrUpdateResponse])
+	ret0, _ := ret[0].(services.Poller[armoperationalinsights.WorkspacesClientCreateOrUpdateResponse])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

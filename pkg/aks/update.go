@@ -70,100 +70,98 @@ func updateCluster(desiredCluster armcontainerservice.ManagedCluster, actualClus
 		logrus.Warn("Not all cluster properties can be updated.")
 	}
 
-	if actualCluster.ManagedClusterProperties == nil {
-		actualCluster.ManagedClusterProperties = &armcontainerservice.ManagedClusterProperties{}
+	if actualCluster.Properties == nil {
+		actualCluster.Properties = &armcontainerservice.ManagedClusterProperties{}
 	}
 
 	// Update kubernetes version
 	// If a cluster is imported, we may not have the kubernetes version set on the spec.
-	if desiredCluster.KubernetesVersion != nil {
-		actualCluster.KubernetesVersion = desiredCluster.KubernetesVersion
+	if desiredCluster.Properties.KubernetesVersion != nil {
+		actualCluster.Properties.KubernetesVersion = desiredCluster.Properties.KubernetesVersion
 	}
 
 	// Add/update agent pool profiles
-	if actualCluster.AgentPoolProfiles == nil {
-		actualCluster.AgentPoolProfiles = &[]armcontainerservice.ManagedClusterAgentPoolProfile{}
+	if actualCluster.Properties.AgentPoolProfiles == nil {
+		actualCluster.Properties.AgentPoolProfiles = []*armcontainerservice.ManagedClusterAgentPoolProfile{}
 	}
 
-	for _, ap := range *desiredCluster.AgentPoolProfiles {
-		if !hasAgentPoolProfile(ap.Name, actualCluster.AgentPoolProfiles) {
-			*actualCluster.AgentPoolProfiles = append(*actualCluster.AgentPoolProfiles, ap)
+	for _, ap := range desiredCluster.Properties.AgentPoolProfiles {
+		if !hasAgentPoolProfile(to.String(ap.Name), actualCluster.Properties.AgentPoolProfiles) {
+			actualCluster.Properties.AgentPoolProfiles = append(actualCluster.Properties.AgentPoolProfiles, ap)
 		}
 	}
 
 	// Add/update addon profiles (this will keep separate profiles added by AKS). This code will also add/update addon
 	// profiles for http application routing and monitoring.
-	if actualCluster.AddonProfiles == nil {
-		actualCluster.AddonProfiles = map[string]*armcontainerservice.ManagedClusterAddonProfile{}
+	if actualCluster.Properties.AddonProfiles == nil {
+		actualCluster.Properties.AddonProfiles = map[string]*armcontainerservice.ManagedClusterAddonProfile{}
 	}
-	for profile := range desiredCluster.AddonProfiles {
-		actualCluster.AddonProfiles[profile] = desiredCluster.AddonProfiles[profile]
+	for profile := range desiredCluster.Properties.AddonProfiles {
+		actualCluster.Properties.AddonProfiles[profile] = desiredCluster.Properties.AddonProfiles[profile]
 	}
 
 	// Auth IP ranges
 	// note: there could be authorized IP ranges set in AKS that haven't propagated yet when this update is done. Add
 	// ranges from Rancher to any ones already set in AKS.
-	if actualCluster.APIServerAccessProfile == nil {
-		actualCluster.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
-			AuthorizedIPRanges: &[]string{},
+	if actualCluster.Properties.APIServerAccessProfile == nil {
+		actualCluster.Properties.APIServerAccessProfile = &armcontainerservice.ManagedClusterAPIServerAccessProfile{
+			AuthorizedIPRanges: []*string{},
 		}
 	}
 
-	if desiredCluster.APIServerAccessProfile != nil && desiredCluster.APIServerAccessProfile.AuthorizedIPRanges != nil {
-		for i := range *desiredCluster.APIServerAccessProfile.AuthorizedIPRanges {
-			ipRange := (*desiredCluster.APIServerAccessProfile.AuthorizedIPRanges)[i]
+	if desiredCluster.Properties.APIServerAccessProfile != nil && desiredCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges != nil {
+		for i := range desiredCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges {
+			ipRange := (desiredCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges)[i]
 
-			if !hasAuthorizedIPRange(ipRange, actualCluster.APIServerAccessProfile) {
-				*actualCluster.APIServerAccessProfile.AuthorizedIPRanges = append(*actualCluster.APIServerAccessProfile.AuthorizedIPRanges, ipRange)
+			if !hasAuthorizedIPRange(to.String(ipRange), actualCluster.Properties.APIServerAccessProfile) {
+				actualCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges = append(actualCluster.Properties.APIServerAccessProfile.AuthorizedIPRanges, ipRange)
 			}
 		}
 	}
 
 	// Linux profile
-	if desiredCluster.LinuxProfile != nil {
-		actualCluster.LinuxProfile = desiredCluster.LinuxProfile
+	if desiredCluster.Properties.LinuxProfile != nil {
+		actualCluster.Properties.LinuxProfile = desiredCluster.Properties.LinuxProfile
 	}
 
 	// Network profile
-	if desiredCluster.NetworkProfile != nil {
-		if actualCluster.NetworkProfile == nil {
-			actualCluster.NetworkProfile = &armcontainerservice.NetworkProfile{}
+	// Setting the DockerBridgeCidr field is no longer supported, see https://github.com/Azure/AKS/issues/3534
+	if desiredCluster.Properties.NetworkProfile != nil {
+		if actualCluster.Properties.NetworkProfile == nil {
+			actualCluster.Properties.NetworkProfile = &armcontainerservice.NetworkProfile{}
 		}
 
-		if desiredCluster.NetworkProfile.NetworkPlugin != "" {
-			actualCluster.NetworkProfile.NetworkPlugin = desiredCluster.NetworkProfile.NetworkPlugin
+		if desiredCluster.Properties.NetworkProfile.NetworkPlugin != nil {
+			actualCluster.Properties.NetworkProfile.NetworkPlugin = desiredCluster.Properties.NetworkProfile.NetworkPlugin
 		}
-		if desiredCluster.NetworkProfile.NetworkPolicy != "" {
-			actualCluster.NetworkProfile.NetworkPolicy = desiredCluster.NetworkProfile.NetworkPolicy
+		if desiredCluster.Properties.NetworkProfile.NetworkPolicy != nil {
+			actualCluster.Properties.NetworkProfile.NetworkPolicy = desiredCluster.Properties.NetworkProfile.NetworkPolicy
 		}
-		if desiredCluster.NetworkProfile.NetworkMode != "" { // This is never set on the managed cluster so it will always be empty
-			actualCluster.NetworkProfile.NetworkMode = desiredCluster.NetworkProfile.NetworkMode
+		if desiredCluster.Properties.NetworkProfile.NetworkMode != nil { // This is never set on the managed cluster so it will always be empty
+			actualCluster.Properties.NetworkProfile.NetworkMode = desiredCluster.Properties.NetworkProfile.NetworkMode
 		}
-		if desiredCluster.NetworkProfile.DNSServiceIP != nil {
-			actualCluster.NetworkProfile.DNSServiceIP = desiredCluster.NetworkProfile.DNSServiceIP
+		if desiredCluster.Properties.NetworkProfile.DNSServiceIP != nil {
+			actualCluster.Properties.NetworkProfile.DNSServiceIP = desiredCluster.Properties.NetworkProfile.DNSServiceIP
 		}
-		if desiredCluster.NetworkProfile.DockerBridgeCidr != nil {
-			actualCluster.NetworkProfile.DockerBridgeCidr = desiredCluster.NetworkProfile.DockerBridgeCidr
+		if desiredCluster.Properties.NetworkProfile.PodCidr != nil {
+			actualCluster.Properties.NetworkProfile.PodCidr = desiredCluster.Properties.NetworkProfile.PodCidr
 		}
-		if desiredCluster.NetworkProfile.PodCidr != nil {
-			actualCluster.NetworkProfile.PodCidr = desiredCluster.NetworkProfile.PodCidr
+		if desiredCluster.Properties.NetworkProfile.ServiceCidr != nil {
+			actualCluster.Properties.NetworkProfile.ServiceCidr = desiredCluster.Properties.NetworkProfile.ServiceCidr
 		}
-		if desiredCluster.NetworkProfile.ServiceCidr != nil {
-			actualCluster.NetworkProfile.ServiceCidr = desiredCluster.NetworkProfile.ServiceCidr
+		if desiredCluster.Properties.NetworkProfile.OutboundType != nil { // This is never set on the managed cluster so it will always be empty
+			actualCluster.Properties.NetworkProfile.OutboundType = desiredCluster.Properties.NetworkProfile.OutboundType
 		}
-		if desiredCluster.NetworkProfile.OutboundType != "" { // This is never set on the managed cluster so it will always be empty
-			actualCluster.NetworkProfile.OutboundType = desiredCluster.NetworkProfile.OutboundType
-		}
-		if desiredCluster.NetworkProfile.LoadBalancerSku != "" {
-			actualCluster.NetworkProfile.LoadBalancerSku = desiredCluster.NetworkProfile.LoadBalancerSku
+		if desiredCluster.Properties.NetworkProfile.LoadBalancerSKU != nil {
+			actualCluster.Properties.NetworkProfile.LoadBalancerSKU = desiredCluster.Properties.NetworkProfile.LoadBalancerSKU
 		}
 		// LoadBalancerProfile is not configurable in Rancher so there won't be subfield conflicts. Just pull it from
 		// the state in AKS.
 	}
 
 	// Service principal client id and secret
-	if desiredCluster.ServicePrincipalProfile != nil {
-		actualCluster.ServicePrincipalProfile = desiredCluster.ServicePrincipalProfile
+	if desiredCluster.Properties.ServicePrincipalProfile != nil {
+		actualCluster.Properties.ServicePrincipalProfile = desiredCluster.Properties.ServicePrincipalProfile
 	}
 
 	// Tags
@@ -194,16 +192,16 @@ func validateUpdate(desiredCluster armcontainerservice.ManagedCluster, actualClu
 		return false
 	}
 
-	if desiredCluster.ManagedClusterProperties != nil && actualCluster.ManagedClusterProperties != nil &&
-		desiredCluster.DNSPrefix != nil && actualCluster.DNSPrefix != nil &&
-		to.String(desiredCluster.DNSPrefix) != to.String(actualCluster.DNSPrefix) {
-		logrus.Warnf("Cluster DNS prefix update from [%s] to [%s] is not supported", *actualCluster.DNSPrefix, *desiredCluster.DNSPrefix)
+	if desiredCluster.Properties != nil && actualCluster.Properties != nil &&
+		desiredCluster.Properties.DNSPrefix != nil && actualCluster.Properties.DNSPrefix != nil &&
+		to.String(desiredCluster.Properties.DNSPrefix) != to.String(actualCluster.Properties.DNSPrefix) {
+		logrus.Warnf("Cluster DNS prefix update from [%s] to [%s] is not supported", *actualCluster.Properties.DNSPrefix, *desiredCluster.Properties.DNSPrefix)
 		return false
 	}
 
-	if desiredCluster.ManagedClusterProperties != nil && actualCluster.ManagedClusterProperties != nil &&
-		desiredCluster.APIServerAccessProfile != nil && actualCluster.APIServerAccessProfile != nil &&
-		to.Bool(desiredCluster.APIServerAccessProfile.EnablePrivateCluster) != to.Bool(actualCluster.APIServerAccessProfile.EnablePrivateCluster) {
+	if desiredCluster.Properties != nil && actualCluster.Properties != nil &&
+		desiredCluster.Properties.APIServerAccessProfile != nil && actualCluster.Properties.APIServerAccessProfile != nil &&
+		to.Bool(desiredCluster.Properties.APIServerAccessProfile.EnablePrivateCluster) != to.Bool(actualCluster.Properties.APIServerAccessProfile.EnablePrivateCluster) {
 		logrus.Warn("Cluster can't be updated from private")
 		return false
 	}
@@ -211,13 +209,13 @@ func validateUpdate(desiredCluster armcontainerservice.ManagedCluster, actualClu
 	return true
 }
 
-func hasAgentPoolProfile(name *string, agentPoolProfiles *[]armcontainerservice.ManagedClusterAgentPoolProfile) bool {
+func hasAgentPoolProfile(name string, agentPoolProfiles []*armcontainerservice.ManagedClusterAgentPoolProfile) bool {
 	if agentPoolProfiles == nil {
 		return false
 	}
 
-	for _, ap := range *agentPoolProfiles {
-		if *ap.Name == *name {
+	for _, ap := range agentPoolProfiles {
+		if to.String(ap.Name) == name {
 			return true
 		}
 	}
@@ -229,8 +227,8 @@ func hasAuthorizedIPRange(name string, apiServerAccessProfile *armcontainerservi
 		return false
 	}
 
-	for _, ipRange := range *apiServerAccessProfile.AuthorizedIPRanges {
-		if ipRange == name {
+	for _, ipRange := range apiServerAccessProfile.AuthorizedIPRanges {
+		if to.String(ipRange) == name {
 			return true
 		}
 	}

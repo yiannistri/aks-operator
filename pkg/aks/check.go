@@ -152,6 +152,10 @@ func CheckLogAnalyticsWorkspaceForMonitoring(ctx context.Context, client service
 			},
 		},
 	}, nil)
+	if err != nil {
+		return "", err
+	}
+
 	resp, err := poller.PollUntilDone(ctx, nil)
 	if err != nil {
 		return "", err

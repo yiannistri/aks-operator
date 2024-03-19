@@ -11,10 +11,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 )
 
+type Poller[T any] interface {
+	PollUntilDone(ctx context.Context, options *runtime.PollUntilDoneOptions) (T, error)
+}
+
 type ManagedClustersClientInterface interface {
-	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error)
+	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error)
 	Get(ctx context.Context, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientGetOptions) (armcontainerservice.ManagedClustersClientGetResponse, error)
-	BeginDelete(ctx context.Context, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error)
+	BeginDelete(ctx context.Context, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error)
 	GetAccessProfile(ctx context.Context, resourceGroupName string, resourceName string, roleName string, options *armcontainerservice.ManagedClustersClientGetAccessProfileOptions) (armcontainerservice.ManagedClustersClientGetAccessProfileResponse, error)
 	BeginUpdateTags(ctx context.Context, resourceGroupName string, resourceName string, parameters armcontainerservice.TagsObject, options *armcontainerservice.ManagedClustersClientBeginUpdateTagsOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientUpdateTagsResponse], error)
 }
@@ -39,7 +43,7 @@ func NewManagedClustersClient(subscriptionID string, credential *azidentity.Clie
 	}, nil
 }
 
-func (cl *managedClustersClient) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
+func (cl *managedClustersClient) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
 	return cl.armManagedClustersClient.BeginCreateOrUpdate(ctx, resourceGroupName, resourceName, parameters, options)
 }
 
@@ -47,7 +51,7 @@ func (cl *managedClustersClient) Get(ctx context.Context, resourceGroupName stri
 	return cl.armManagedClustersClient.Get(ctx, resourceGroupName, resourceName, options)
 }
 
-func (cl *managedClustersClient) BeginDelete(ctx context.Context, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
+func (cl *managedClustersClient) BeginDelete(ctx context.Context, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
 	return cl.armManagedClustersClient.BeginDelete(ctx, resourceGroupName, resourceName, options)
 }
 

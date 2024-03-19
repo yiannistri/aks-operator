@@ -15,8 +15,47 @@ import (
 
 	runtime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	services "github.com/rancher/aks-operator/pkg/aks/services"
 	gomock "go.uber.org/mock/gomock"
 )
+
+// MockPoller is a mock of Poller interface.
+type MockPoller[T any] struct {
+	ctrl     *gomock.Controller
+	recorder *MockPollerMockRecorder[T]
+}
+
+// MockPollerMockRecorder is the mock recorder for MockPoller.
+type MockPollerMockRecorder[T any] struct {
+	mock *MockPoller[T]
+}
+
+// NewMockPoller creates a new mock instance.
+func NewMockPoller[T any](ctrl *gomock.Controller) *MockPoller[T] {
+	mock := &MockPoller[T]{ctrl: ctrl}
+	mock.recorder = &MockPollerMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPoller[T]) EXPECT() *MockPollerMockRecorder[T] {
+	return m.recorder
+}
+
+// PollUntilDone mocks base method.
+func (m *MockPoller[T]) PollUntilDone(ctx context.Context, options *runtime.PollUntilDoneOptions) (T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PollUntilDone", ctx, options)
+	ret0, _ := ret[0].(T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PollUntilDone indicates an expected call of PollUntilDone.
+func (mr *MockPollerMockRecorder[T]) PollUntilDone(ctx, options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PollUntilDone", reflect.TypeOf((*MockPoller[T])(nil).PollUntilDone), ctx, options)
+}
 
 // MockManagedClustersClientInterface is a mock of ManagedClustersClientInterface interface.
 type MockManagedClustersClientInterface struct {
@@ -42,10 +81,10 @@ func (m *MockManagedClustersClientInterface) EXPECT() *MockManagedClustersClient
 }
 
 // BeginCreateOrUpdate mocks base method.
-func (m *MockManagedClustersClientInterface) BeginCreateOrUpdate(ctx context.Context, resourceGroupName, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
+func (m *MockManagedClustersClientInterface) BeginCreateOrUpdate(ctx context.Context, resourceGroupName, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (services.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BeginCreateOrUpdate", ctx, resourceGroupName, resourceName, parameters, options)
-	ret0, _ := ret[0].(*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse])
+	ret0, _ := ret[0].(services.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -57,10 +96,10 @@ func (mr *MockManagedClustersClientInterfaceMockRecorder) BeginCreateOrUpdate(ct
 }
 
 // BeginDelete mocks base method.
-func (m *MockManagedClustersClientInterface) BeginDelete(ctx context.Context, resourceGroupName, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
+func (m *MockManagedClustersClientInterface) BeginDelete(ctx context.Context, resourceGroupName, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (services.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BeginDelete", ctx, resourceGroupName, resourceName, options)
-	ret0, _ := ret[0].(*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse])
+	ret0, _ := ret[0].(services.Poller[armcontainerservice.ManagedClustersClientDeleteResponse])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
